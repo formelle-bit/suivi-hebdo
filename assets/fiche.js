@@ -102,7 +102,7 @@
       var c = await feGet(Object.assign({ action: 'contexte' }, params));
       if (!c || !c.ok) { status('⚠️ ' + ((c && c.error) || 'Fiche introuvable'), 'err'); return; }
       S.ctx = c; S.taskId = c.taskId; if (c.contactId) S.contactId = c.contactId;
-      $('apprenante').value = c.nom; $('apprenante').readOnly = !!feParam('contactId');
+      $('apprenante').value = c.nom; $('apprenante').readOnly = !!(feParam('contactId') || feParam('taskId'));
       $('chipSession').textContent = (c.debut ? feFr(c.debut) : '—') + ' → ' + (c.fin ? feFr(c.fin) : '—');
       if (c.formule) $('formule').value = c.formule;
       if (c.modaliteFormule) $('modaliteFormule').value = c.modaliteFormule;
@@ -207,13 +207,15 @@
   /* ---------- Démarrage ---------- */
   var d = rdvDateParam ? rdvDateParam.slice(0, 10) : new Date().toISOString().slice(0, 10);
   $('dateSuivi').value = d;
-  var fp = feParam('formatrice'); if (fp) { var opt = Array.prototype.find.call($('formatrice').options, function (o) { return o.value.toLowerCase() === fp.toLowerCase(); }); if (opt) $('formatrice').value = opt.value; }
+  var fp = feParam('formatrice').trim().toLowerCase(); if (fp) { var opt = Array.prototype.find.call($('formatrice').options, function (o) { var v = o.value.toLowerCase(); return v && (v === fp || v.indexOf(fp + ' ') === 0 || fp.indexOf(v + ' ') === 0); }); if (opt) $('formatrice').value = opt.value; }
   var nom = feParam('apprenante'); if (nom) $('apprenante').value = nom;
   var rk = document.createElement('button'); rk.id = 'btnReset'; rk.type = 'button'; rk.className = 'btn-link-reset hidden'; rk.textContent = "↺ Changer d'apprenante";
   rk.addEventListener('click', function () { location.href = 'fiche.html'; });
   $('aide').parentNode.appendChild(rk);
   feKey(false);
   setSections(false);
+  var tid = feParam('taskId');
   if (S.contactId) { $('btnCharger').classList.add('hidden'); loadContext({ contactId: S.contactId }); }
+  else if (tid) { $('btnCharger').classList.add('hidden'); $('apprenante').readOnly = true; loadContext({ taskId: tid }); }
   else { loadNames(); status('Aucune apprenante sélectionnée.', ''); }
 })();
