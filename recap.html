@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Form'Elle — Récapitulatif des suivis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="page-wrapper wide">
+  <header>
+    <div class="logo-zone"><img src="assets/logo.png" alt="Form'Elle"></div>
+    <div class="header-text">
+      <h1>Récapitulatif des suivis hebdomadaires</h1>
+      <div class="subtitle">Tous les suivis enregistrés, à filtrer, trier et exporter</div>
+    </div>
+    <a class="link-new" href="fiche.html">+ Nouvelle fiche</a>
+  </header>
+
+  <div class="toolbar">
+    <div class="field"><label for="fApprenante">Apprenante</label><input type="text" id="fApprenante" placeholder="Rechercher…"></div>
+    <div class="field"><label for="fFormule">Formule</label><select id="fFormule"><option value="">Toutes</option></select></div>
+    <div class="field"><label for="fFormatrice">Formatrice</label><select id="fFormatrice"><option value="">Toutes</option></select></div>
+    <div class="field"><label for="fSemaine">Semaine</label><select id="fSemaine"><option value="">Toutes</option></select></div>
+    <div class="field"><label for="fDrapeau">Drapeau</label><select id="fDrapeau"><option value="">Tous</option><option>Gris</option><option>Bleu</option><option>Jaune</option><option>Rouge</option></select></div>
+    <div class="field"><label for="fRdv">Rendez-vous</label><select id="fRdv"><option value="">Tous</option><option value="Oui">Réalisés</option><option value="Non">Non réalisés</option></select></div>
+    <button class="btn-refresh" id="btnRefresh" type="button">↻ Actualiser</button>
+    <button class="btn-export" id="btnXlsx" type="button">⬇ Excel</button>
+    <button class="btn-export pdf" id="btnPrint" type="button">🖨 PDF / Imprimer</button>
+    <span class="count-badge" id="count"></span>
+  </div>
+
+  <div id="state-msg">⏳ Chargement…</div>
+  <div class="content hidden" id="content">
+    <table id="tbl"><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table>
+  </div>
+  <footer class="note">Cliquer sur un titre de colonne pour trier. Les données viennent des fiches enregistrées depuis la nouvelle page de suivi.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var COLS = [
+    ['dateSuivi', 'Date'], ['apprenante', 'Apprenante'], ['formule', 'Formule'], ['formatrice', 'Formatrice'], ['numRdv', 'RDV'],
+    ['semaine', 'Sem.'], ['rdvRealise', 'Réalisé'], ['duree', 'Durée'], ['pct', '% Teachizy'], ['drapeau', 'Drapeau'], ['dateCertification', 'Certification'],
+    ['motif', 'Motif'], ['devoirs', 'Devoirs'], ['pointsCoches', 'Points abordés'], ['pointsForts', 'Points forts'], ['difficultes', 'Difficultés'], ['objectifs', 'Objectifs'], ['autre', 'Autre'], ['pdfUrl', 'PDF']
+  ];
+  var ALL = [], sortKey = 'dateSuivi', sortDir = -1;
+
+  function cell(k, r) {
+    var v = r[k];
+    if (v === null || v === undefined || v === '') return '<span class="cell-empty">—</span>';
+    if (k === 'dateSuivi' || k === 'dateCertification') return feFr(v);
+    if (k === 'pct') { var n = Number(v), c = n >= 60 ? 'pct-ok' : n >= 30 ? 'pct-warn' : 'pct-alert'; return '<span class="pct-pill ' + c + '">' + n + ' %</span>'; }
+    if (k === 'drapeau') return '<span class="drapeau-pill ' + String(v).toLowerCase() + '"><span class="flag">' + FE_FLAG + '</span>' + feEsc(v) + '</span>';
+    if (k === 'pdfUrl') return /^https:\/\//.test(v) ? '<a class="link-consult" href="' + feEsc(v) + '" target="_blank" rel="noopener">Ouvrir</a>' : '—';
+    if (['pointsCoches', 'pointsForts', 'difficultes', 'objectifs', 'autre', 'motif'].indexOf(k) >= 0) return '<div class="cell-wrap">' + feEsc(v) + '</div>';
+    return feEsc(v);
+  }
+  function filtered() {
+    var a = $('fApprenante').value.trim().toLowerCase(), f = $('fFormule').value, fo = $('fFormatrice').value, s = $('fSemaine').value, d = $('fDrapeau').value, rd = $('fRdv').value;
+    var rows = ALL.filter(function (r) {
+      return (!a || String(r.apprenante).toLowerCase().indexOf(a) >= 0) && (!f || r.formule === f) && (!fo || r.formatrice === fo) &&
+        (!s || String(r.semaine) === s) && (!d || r.drapeau === d) && (!rd || r.rdvRealise === rd);
+    });
+    rows.sort(function (x, y) {
+      var a1 = x[sortKey], b1 = y[sortKey];
+      if (a1 === null || a1 === undefined || a1 === '') return 1;
+      if (b1 === null || b1 === undefined || b1 === '') return -1;
+      var n = (typeof a1 === 'number' && typeof b1 === 'number') ? a1 - b1 : String(a1).localeCompare(String(b1), 'fr', { numeric: true });
+      return n * sortDir;
+    });
+    return rows;
+  }
+  function render() {
+    $('thead').innerHTML = COLS.map(function (c) { return '<th data-k="' + c[0] + '">' + c[1] + (c[0] === sortKey ? '<span class="arrow">' + (sortDir > 0 ? '▲' : '▼') + '</span>' : '') + '</th>'; }).join('');
+    document.querySelectorAll('#thead th').forEach(function (th) { th.addEventListener('click', function () { var k = th.dataset.k; if (k === sortKey) sortDir = -sortDir; else { sortKey = k; sortDir = 1; } render(); }); });
+    var rows = filtered();
+    $('tbody').innerHTML = rows.map(function (r) { return '<tr>' + COLS.map(function (c) { return '<td>' + cell(c[0], r) + '</td>'; }).join('') + '</tr>'; }).join('');
+    $('count').textContent = rows.length + ' suivi' + (rows.length > 1 ? 's' : '') + ' sur ' + ALL.length;
+    var empty = !rows.length;
+    $('state-msg').classList.toggle('hidden', !empty && ALL.length > 0);
+    if (empty) $('state-msg').textContent = ALL.length ? 'Aucun suivi ne correspond aux filtres.' : "Aucun suivi enregistré pour l'instant.";
+    $('content').classList.toggle('hidden', empty);
+  }
+  function fillSelect(id, vals, numeric) {
+    var sel = $(id), cur = sel.value, first = sel.options[0].outerHTML;
+    var u = Array.from(new Set(vals.filter(function (v) { return v !== null && v !== undefined && v !== ''; }))).sort(function (a, b) { return String(a).localeCompare(String(b), 'fr', { numeric: true }); });
+    sel.innerHTML = first + u.map(function (v) { return '<option>' + feEsc(v) + '</option>'; }).join('');
+    sel.value = cur;
+  }
+  async function load() {
+    $('state-msg').classList.remove('hidden'); $('state-msg').textContent = '⏳ Chargement…'; $('content').classList.add('hidden');
+    try {
+      var r = await feGet({ action: 'recap' });
+      if (!r || !r.ok) { $('state-msg').textContent = '⚠️ ' + ((r && r.error) || 'Erreur de chargement') + " — ouvre la page depuis le lien Slack ou demande le code d'accès à Ninie."; return; }
+      ALL = r.data || [];
+      fillSelect('fFormule', ALL.map(function (x) { return x.formule; }));
+      fillSelect('fFormatrice', ALL.map(function (x) { return x.formatrice; }));
+      fillSelect('fSemaine', ALL.map(function (x) { return x.semaine; }));
+      render();
+    } catch (e) { $('state-msg').textContent = '⚠️ Impossible de charger les suivis : ' + e.message; }
+  }
+  ['fApprenante', 'fFormule', 'fFormatrice', 'fSemaine', 'fDrapeau', 'fRdv'].forEach(function (id) { $(id).addEventListener('input', render); });
+  $('btnRefresh').addEventListener('click', load);
+  $('btnPrint').addEventListener('click', function () { window.print(); });
+  $('btnXlsx').addEventListener('click', function () {
+    var rows = filtered();
+    if (!rows.length) return;
+    if (typeof XLSX === 'undefined') { alert("Export Excel indisponible (bibliothèque non chargée)."); return; }
+    var data = rows.map(function (r) { var o = {}; COLS.forEach(function (c) { var v = r[c[0]]; o[c[1]] = (c[0] === 'dateSuivi' || c[0] === 'dateCertification') ? feFr(v) : (v === null || v === undefined ? '' : v); }); return o; });
+    var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'Suivis');
+    XLSX.writeFile(wb, 'FormElle_suivis_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+  });
+  feKey(false); load();
+})();
+</script>
+</body>
+</html>

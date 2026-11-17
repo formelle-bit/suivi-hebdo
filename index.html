@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Form'Elle — Suivi hebdo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  body { background: linear-gradient(135deg, var(--pink-dark) 0%, var(--pink) 100%); display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .box { background: white; border-radius: 14px; padding: 34px 34px 30px; max-width: 480px; width: 100%; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,.18); }
+  .box h1 { font-size: 22px; color: var(--pink-dark); margin-bottom: 6px; }
+  p.sub { color: #888; font-size: 13px; margin-bottom: 26px; }
+  .choices { display: flex; flex-direction: column; gap: 14px; }
+  a.choice { display: flex; align-items: center; gap: 14px; text-align: left; text-decoration: none; background: var(--pink-tint); border: 1.5px solid #F5D6E3; border-radius: 12px; padding: 16px 18px; transition: transform .12s ease, box-shadow .12s ease; }
+  a.choice:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(200,88,133,.18); }
+  a.choice .emoji { font-size: 26px; flex-shrink: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 10px; }
+  a.choice .txt strong { display: block; color: var(--pink-dark); font-size: 14.5px; margin-bottom: 2px; }
+  a.choice .txt span { display: block; color: var(--text-dark); font-size: 12px; opacity: .8; }
+  a.choice.recap { background: #F1EAF6; border-color: #E1D3EC; } a.choice.recap .txt strong { color: var(--purple); }
+  a.choice.tuto { background: #EAF4ED; border-color: #D3E9D9; } a.choice.tuto .txt strong { color: var(--green); }
+  .footer-note { margin-top: 22px; font-size: 11px; color: #aaa; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <img class="home-logo" src="assets/logo.png" alt="Form'Elle">
+    <h1>Suivi hebdo</h1>
+    <p class="sub">Que veux-tu faire ?</p>
+    <div class="choices">
+      <a class="choice fiche" href="fiche.html">
+        <div class="emoji">📝</div>
+        <div class="txt"><strong>Remplir une fiche de suivi</strong><span>À faire pendant ou juste après chaque rendez-vous pédagogique</span></div>
+      </a>
+      <a class="choice recap" href="recap.html">
+        <div class="emoji">📊</div>
+        <div class="txt"><strong>Consulter le récapitulatif</strong><span>Voir, trier et exporter l'ensemble des suivis enregistrés</span></div>
+      </a>
+      <a class="choice tuto" href="guide.html">
+        <div class="emoji">📖</div>
+        <div class="txt"><strong>Guide d'utilisation</strong><span>Un rappel en 2 minutes</span></div>
+      </a>
+    </div>
+    <div class="footer-note">Astuce : après le RDV, ouvre la fiche depuis le lien reçu sur Slack, elle est déjà préremplie.</div>
+    <div class="conn" id="conn">Connexion…</div>
+  </div>
+<script src="assets/app.js"></script>
+<script>
+  feKey(false);
+  (async function () {
+    var el = document.getElementById('conn');
+    try {
+      var r = await feGet({ action: 'noms' });
+      if (r && r.ok) { el.textContent = '● Connecté (' + r.data.length + ' apprenantes)'; el.className = 'conn ok'; }
+      else { el.textContent = '● Code d\'accès requis : ouvre la page depuis le lien Slack'; el.className = 'conn err'; }
+    } catch (e) { el.textContent = '● Connexion impossible pour le moment'; el.className = 'conn err'; }
+  })();
+</script>
+</body>
+</html>

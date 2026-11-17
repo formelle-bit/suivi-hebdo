@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Form'Elle — Fiche de suivi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="page-wrapper">
+  <header>
+    <div class="logo-zone"><img src="assets/logo.png" alt="Form'Elle"></div>
+    <div class="header-text">
+      <h1>Suivi hebdomadaire — apprenantes</h1>
+      <div class="subtitle">Accompagnement pédagogique &amp; suivi individuel</div>
+    </div>
+    <div class="badge">📋 Trace pédagogique Qualiopi</div>
+  </header>
+
+  <div class="content">
+    <!-- 1. Apprenante -->
+    <div class="section" id="section-apprenante">
+      <div class="section-header"><span class="icon">🔎</span> Apprenante concernée</div>
+      <div class="section-body">
+        <div class="search-row">
+          <div class="field">
+            <label>Nom de l'apprenante</label>
+            <input type="text" id="apprenante" placeholder="Prénom Nom" list="liste-apprenantes" autocomplete="off">
+            <datalist id="liste-apprenantes"></datalist>
+          </div>
+          <button type="button" class="btn-search" id="btnCharger">🔎 Charger la fiche</button>
+        </div>
+        <div class="recherche-status" id="status"></div>
+        <div class="fe-note" id="aide">💡 Ouvre de préférence la fiche depuis le lien Slack : tout est prérempli. Sinon, tape un nom puis « Charger la fiche ».</div>
+      </div>
+    </div>
+
+    <!-- 2. Formule -->
+    <div class="section" id="section-identite">
+      <div class="section-header violet"><span class="icon">🎓</span> Formule &amp; démarrage</div>
+      <div class="section-body">
+        <div class="grid-3">
+          <div class="field"><label>Formule</label>
+            <select id="formule"><option value="">— Sélectionner —</option><option>Star</option><option>Essentielle</option></select></div>
+          <div class="field"><label>Modalité de la formule</label>
+            <select id="modaliteFormule"><option value="">— Sélectionner —</option><option>Individuel</option><option>Collectif</option></select></div>
+          <div class="field"><label>Session</label><div class="readonly-chip" id="chipSession">—</div></div>
+        </div>
+        <div class="fe-note">La formule et la modalité sont mémorisées après le premier suivi. La session vient de ClickUp.</div>
+      </div>
+    </div>
+
+    <!-- 3. Historique -->
+    <div class="section" id="section-historique">
+      <div class="section-header bleu"><span class="icon">📈</span> Historique de l'apprenante</div>
+      <div class="section-body">
+        <div id="hist-empty" class="hist-empty">Charge d'abord une fiche pour afficher l'historique.</div>
+        <div id="hist-summary"></div>
+        <button type="button" class="btn-toggle-full hidden" id="btnHist">Dérouler tout l'historique ▾</button>
+        <div id="historique-full"></div>
+      </div>
+    </div>
+
+    <!-- 4. Ce suivi -->
+    <div class="section" id="section-suivi">
+      <div class="section-header"><span class="icon">📅</span> Ce suivi</div>
+      <div class="section-body">
+        <div class="grid-3" style="margin-bottom:12px">
+          <div class="field"><label>Date du suivi</label><input type="date" id="dateSuivi"></div>
+          <div class="field"><label>Formatrice *</label>
+            <select id="formatrice"><option value="">— Sélectionner —</option><option>Sabrina Merad</option><option>Leslie Partouche</option></select></div>
+          <div class="field"><label>Durée</label>
+            <div class="toggle-row"><div class="toggle-btn" data-duree="30 min">30 min</div><div class="toggle-btn" data-duree="1h">1h</div></div></div>
+        </div>
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="field"><label>N° de rendez-vous *</label>
+            <select id="numRdv">
+              <option value="">— Sélectionner —</option>
+              <option>1 - Accès (onboarding)</option>
+              <option>2 - Suivi</option>
+              <option>3 - Suivi mi-parcours</option>
+              <option>4 - Bilan</option>
+              <option>Suivi supplémentaire</option>
+            </select></div>
+          <div class="field"><label>Mode du rendez-vous</label>
+            <div class="toggle-row"><div class="toggle-btn" data-modalite="Téléphone">📞 Téléphone</div><div class="toggle-btn" data-modalite="Visio">💻 Visio</div></div></div>
+        </div>
+        <label class="signature-item" style="margin-top:6px;"><input type="checkbox" id="nonRealise"><span class="txt">Le rendez-vous n'a pas eu lieu</span></label>
+      </div>
+    </div>
+
+    <!-- 5. Motif -->
+    <div class="section hidden" id="section-motif">
+      <div class="section-header" style="background:#B33A3A;"><span class="icon">📵</span> Motif du rendez-vous non réalisé</div>
+      <div class="section-body">
+        <div class="radio-row" id="motifRow">
+          <label class="radio-pill"><input type="radio" name="motif" value="Ne répond pas"> Ne répond pas</label>
+          <label class="radio-pill"><input type="radio" name="motif" value="Reporté à sa demande"> Reporté à sa demande</label>
+          <label class="radio-pill"><input type="radio" name="motif" value="Annulé par l'apprenante"> Annulé par l'apprenante</label>
+          <label class="radio-pill"><input type="radio" name="motif" value="Autre"> Autre</label>
+        </div>
+        <div class="field hidden" id="motifDateWrap" style="margin-top:12px;"><label>Nouvelle date prévue</label><input type="date" id="motifDate"></div>
+        <div class="field hidden" id="motifAutreWrap" style="margin-top:12px;"><label>Préciser</label><input type="text" id="motifAutre" placeholder="Préciser…"></div>
+      </div>
+    </div>
+
+    <!-- 6. Devoirs -->
+    <div class="section hidden" id="section-devoirs">
+      <div class="section-header" style="background:#C07A3E;"><span class="icon">📓</span> Devoir de la semaine</div>
+      <div class="section-body">
+        <div class="fe-note" style="margin:0 0 10px;">À partir du 2ème rendez-vous : le devoir demandé au suivi précédent a-t-il été fait ?</div>
+        <div class="radio-row" id="devoirsRow">
+          <label class="radio-pill"><input type="radio" name="devoirs" value="Fait"> ✅ Fait</label>
+          <label class="radio-pill"><input type="radio" name="devoirs" value="Non fait"> ⚠️ Non fait (alerte pour Ninie)</label>
+        </div>
+      </div>
+    </div>
+
+    <div id="blocRealise">
+      <!-- 7. Émargement et documents -->
+      <div class="section" id="section-emargement">
+        <div class="section-header" style="background:var(--pink-dark);"><span class="icon">🖊️</span> Émargement &amp; documents signés</div>
+        <div class="section-body">
+          <div class="field"><label>Feuille d'émargement signée par l'apprenante ? *</label>
+            <div class="radio-row" id="emargRow">
+              <label class="radio-pill"><input type="radio" name="emarg" value="Oui"> Oui</label>
+              <label class="radio-pill"><input type="radio" name="emarg" value="Non"> Non</label>
+            </div></div>
+          <div class="signature-grid" style="margin-top:14px;">
+            <div id="sig-attestation"></div>
+            <div id="sig-programme"></div>
+          </div>
+          <div class="fe-note">Profites-en pour faire signer les documents manquants pendant le rendez-vous.</div>
+        </div>
+      </div>
+
+      <!-- 8. Niveau -->
+      <div class="section" id="section-pct">
+        <div class="section-header violet"><span class="icon">📊</span> Niveau de suivi du parcours</div>
+        <div class="section-body">
+          <div class="grid-2">
+            <div class="field"><label>% du parcours validé sur Teachizy</label><input type="number" id="pct" min="0" max="100" placeholder="Ex : 45"></div>
+            <div class="field"><label>Date de certification envisagée</label><input type="date" id="dateCertification"></div>
+          </div>
+          <div class="fe-note" id="pctNote">Le % est repris automatiquement de ClickUp (synchronisé avec Teachizy). Modifiable si besoin.</div>
+          <div class="fe-note">Les sessions de certification ont lieu environ tous les 15 jours (mi-mois et fin de mois).</div>
+        </div>
+      </div>
+
+      <!-- 9. Drapeau -->
+      <div class="section" id="section-drapeau">
+        <div class="section-header gris"><span class="icon">🚩</span> Drapeau de suivi *</div>
+        <div class="section-body">
+          <div class="fe-note" style="margin:0 0 10px;">À toi de choisir, selon ce que tu connais de l'apprenante, pas seulement le %.</div>
+          <div class="drapeau-grid" id="drapeauGrid"></div>
+          <div class="fe-note">Paliers attendus sur Teachizy : semaine 1 → 25 % · semaine 2 → 50 % · semaine 3 → 80 % · semaine 4 → ~100 %.</div>
+        </div>
+      </div>
+
+      <!-- 10. Points -->
+      <div class="section" id="section-points">
+        <div class="section-header vert"><span class="icon">✅</span> Points abordés pendant le suivi</div>
+        <div class="section-body">
+          <div class="checkbox-grid" id="pointsGrid"></div>
+          <div class="field"><label>Précision / autre point abordé</label><textarea id="pointsAutre" placeholder="Un sujet abordé qui n'est pas dans la liste ci-dessus…"></textarea></div>
+        </div>
+      </div>
+
+      <!-- 11. Bilan -->
+      <div class="section" id="section-bilan">
+        <div class="section-header"><span class="icon">📝</span> Bilan du suivi</div>
+        <div class="section-body">
+          <div class="grid-2" style="margin-bottom:12px">
+            <div class="field"><label>Points forts</label><textarea id="pointsForts" placeholder="Ce qui avance bien, les progrès…"></textarea></div>
+            <div class="field"><label>Difficultés rencontrées</label><textarea id="difficultes" placeholder="Ce qui pose problème en ce moment…"></textarea></div>
+          </div>
+          <div class="grid-2" style="margin-bottom:12px">
+            <div class="field"><label>Objectifs pour la prochaine étape</label><textarea id="objectifs" placeholder="Ce qui est à faire d'ici le prochain RDV…"></textarea></div>
+            <div class="field"><label>Correction de devoirs</label><textarea id="correctionDevoirs" placeholder="Devoirs corrigés, retours donnés…"></textarea></div>
+          </div>
+          <div class="grid-2" style="margin-bottom:12px">
+            <div class="field"><label>Besoin d'adaptation ou d'aménagement (handicap…)</label><textarea id="adaptation"></textarea></div>
+            <div class="field"><label>Assistance technique apportée (plateforme)</label><textarea id="assistance"></textarea></div>
+          </div>
+          <div class="field"><label>Autre</label><textarea id="autre" placeholder="Tout autre point à noter…"></textarea></div>
+        </div>
+      </div>
+
+      <!-- 12. Risque -->
+      <div class="section" id="section-risque">
+        <div class="section-header" style="background:#B33A3A;"><span class="icon">⚠️</span> Risque d'abandon</div>
+        <div class="section-body">
+          <div class="radio-row" id="risqueRow">
+            <label class="radio-pill on"><input type="radio" name="risque" value="Non" checked> Non</label>
+            <label class="radio-pill"><input type="radio" name="risque" value="Oui"> Oui (alerte pour Ninie)</label>
+          </div>
+          <div class="field hidden" id="risqueActionWrap" style="margin-top:12px;"><label>Action prévue</label><textarea id="actionRisque" placeholder="Que prévoit-on pour la garder dans le parcours ?"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 13. Prochain RDV -->
+    <div class="section" id="section-prochain">
+      <div class="section-header violet"><span class="icon">🗓️</span> Prochain rendez-vous pédagogique</div>
+      <div class="section-body">
+        <div class="radio-row" id="prochainRow">
+          <label class="radio-pill on"><input type="radio" name="prochain" value="ghl" checked> Déjà fixé dans GHL</label>
+          <label class="radio-pill"><input type="radio" name="prochain" value="date"> Fixer la date ici</label>
+          <label class="radio-pill"><input type="radio" name="prochain" value="fin"> Fin de formation</label>
+        </div>
+        <div class="grid-2 hidden" id="prochainDateWrap" style="margin-top:12px;">
+          <div class="field"><label>Date</label><input type="date" id="prochainDate"></div>
+          <div class="field"><label>Heure (ex : 14h30)</label><input type="text" id="prochainHeure" placeholder="14h30"></div>
+        </div>
+        <div class="fe-note">« Déjà fixé dans GHL » : la date est reprise automatiquement du calendrier. Si aucun RDV n'est fixé, une alerte est postée sur Slack.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="msg"></div>
+  <div class="export-bar">
+    <a class="link-consult" href="recap.html">📊 Voir le récapitulatif des suivis</a>
+    <div class="btn-group">
+      <button class="btn-secondary" onclick="window.print()">🖨️ Imprimer / PDF</button>
+      <button class="btn-primary" id="btnSave">Enregistrer le suivi</button>
+    </div>
+  </div>
+</div>
+<script src="assets/app.js"></script>
+<script src="assets/fiche.js"></script>
+</body>
+</html>
