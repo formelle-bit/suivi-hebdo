@@ -53,7 +53,7 @@
     try {
       var r = await feGet({ action: 'noms' });
       if (r && r.ok) { el.textContent = '● Connecté (' + r.data.length + ' apprenantes)'; el.className = 'conn ok'; }
-      else { el.textContent = '● Code d\'accès requis : ouvre la page depuis le lien Slack'; el.className = 'conn err'; }
+      else { el.textContent = '● Connexion refusée par le serveur'; el.className = 'conn err'; }
     } catch (e) { el.textContent = '● Connexion impossible pour le moment'; el.className = 'conn err'; }
   })();
 </script>
