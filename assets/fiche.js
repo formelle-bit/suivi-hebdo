@@ -168,7 +168,6 @@
   function validate(p) {
     if (!S.loaded) return ['section-apprenante', "Charge d'abord la fiche de l'apprenante."];
     if (!p.contactId) return ['section-apprenante', "Contact GHL introuvable : ouvre la fiche depuis le lien Slack."];
-    if (!p.k) return ['section-apprenante', "Code d'accès manquant : ouvre la page depuis le lien Slack."];
     if (!p.dateSuivi) return ['section-suivi', 'Merci de renseigner la date du suivi.'];
     if (!p.formatrice) return ['section-suivi', 'Merci de choisir la formatrice.'];
     if (!p.numRdv) return ['section-suivi', 'Merci de choisir le n° de rendez-vous.'];

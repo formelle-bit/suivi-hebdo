@@ -15,8 +15,6 @@ function feKey(askIfMissing) {
   if (k) { feStore('fe_k', k); try { var u = new URL(location.href); u.searchParams.delete('k'); history.replaceState(null, '', u.toString()); } catch (e) {} return k; }
   k = feStore('fe_k');
   if (!k && askIfMissing) {
-    k = (prompt("Code d'accès Form'Elle (demande-le à Ninie) :") || '').trim();
-    if (k) feStore('fe_k', k);
   }
   return k;
 }
