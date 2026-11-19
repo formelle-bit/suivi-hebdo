@@ -1,219 +1,229 @@
-/* Form'Elle - fiche de suivi hebdomadaire */
-(function () {
-  var $ = function (id) { return document.getElementById(id); };
-  var POINTS = [
-    "Méthodologie / organisation du travail", "Compréhension du contenu théorique", "Technique pratique (gestes, produits)",
-    "Préparation à la certification", "Gestion du temps / avancement du parcours", "Motivation / état d'esprit",
-    "Utilisation de la plateforme Teachizy", "Questions administratives / financement"
-  ];
-  var DRAPEAUX = [
-    ['Gris', 'Gris — Rien à signaler', "Se connecte bien, suit sur Teachizy, vient aux rendez-vous, s'investit, rend ses devoirs."],
-    ['Bleu', 'Bleu — Léger retard', "Moins de 5 % de retard par rapport à l'attendu sur Teachizy — rien de grave, suit bien, se connecte, rendez-vous ok."],
-    ['Jaune', 'Jaune — Retard non rattrapé', "Retard non rattrapé et/ou moins de 50 % de complétion Teachizy en semaine 2, et/ou 1 rendez-vous manqué, et/ou répond peu aux sollicitations, et/ou travaux non rendus."],
-    ['Rouge', 'Rouge — Alerte critique', "Moins de 80 % de complétion Teachizy en semaine 3, et/ou ne répond plus du tout aux sollicitations, ne se connecte pas ou très peu."]
-  ];
-  var S = { contactId: feParam('contactId'), taskId: '', ctx: null, duree: '', modalite: '', drapeau: '', sigDeja: { att: false, prog: false }, sigCoche: { att: false, prog: false }, sent: false, loaded: false };
-  var rdvDateParam = feParam('rdvDate');
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Form'Elle — Fiche de suivi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="page-wrapper">
+  <header>
+    <div class="logo-zone"><img src="assets/logo.png" alt="Form'Elle"></div>
+    <div class="header-text">
+      <h1>Suivi hebdomadaire — apprenantes</h1>
+      <div class="subtitle">Accompagnement pédagogique &amp; suivi individuel</div>
+    </div>
+    <div class="badge">📋 Trace pédagogique Qualiopi</div>
+  </header>
 
-  function msg(text, ok) { var m = $('msg'); m.textContent = text; m.className = ok ? 'ok' : 'err'; if (!ok) m.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-  function status(text, kind) { var s = $('status'); s.textContent = text; s.className = 'recherche-status' + (kind ? ' ' + kind : ''); }
-  function alertSection(id) { var el = $(id); if (!el) return; el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('section-alert'); setTimeout(function () { el.classList.remove('section-alert'); }, 2000); }
-  function show(id, on) { $(id).classList.toggle('hidden', !on); }
-  function radioVal(name) { var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : ''; }
-  function setRadio(name, v) {
-    document.querySelectorAll('input[name="' + name + '"]').forEach(function (r) { r.checked = (r.value === v); r.closest('.radio-pill').classList.toggle('on', r.checked); });
-  }
-  function isRdv2Plus() { var v = $('numRdv').value; return !!v && v.charAt(0) !== '1'; }
-  function setSections(enabled) {
-    ['section-identite', 'section-suivi', 'section-devoirs', 'section-emargement', 'section-pct', 'section-drapeau', 'section-points', 'section-bilan', 'section-risque', 'section-prochain', 'section-motif'].forEach(function (id) { $(id).classList.toggle('disabled', !enabled); });
-  }
+  <div class="content">
+    <!-- 1. Apprenante -->
+    <div class="section" id="section-apprenante">
+      <div class="section-header"><span class="icon">🔎</span> Apprenante concernée</div>
+      <div class="section-body">
+        <div class="search-row">
+          <div class="field">
+            <label>Nom de l'apprenante</label>
+            <input type="text" id="apprenante" placeholder="Prénom Nom" list="liste-apprenantes" autocomplete="off">
+            <datalist id="liste-apprenantes"></datalist>
+          </div>
+          <button type="button" class="btn-search" id="btnCharger">🔎 Charger la fiche</button>
+        </div>
+        <div class="recherche-status" id="status"></div>
+        <div class="fe-note" id="aide">💡 Ouvre de préférence la fiche depuis le lien Slack : tout est prérempli. Sinon, tape un nom puis « Charger la fiche ».</div>
+      </div>
+    </div>
 
-  /* ---------- Construction des blocs ---------- */
-  $('drapeauGrid').innerHTML = DRAPEAUX.map(function (d) {
-    var c = d[0].toLowerCase();
-    return '<label class="drapeau-option drapeau-' + c + '" data-d="' + d[0] + '"><input type="radio" name="drapeau" value="' + d[0] + '"><span class="drapeau-flag">' + FE_FLAG + '</span><span class="txt"><strong>' + d[1] + '</strong><span>' + d[2] + '</span></span></label>';
-  }).join('');
-  $('pointsGrid').innerHTML = POINTS.map(function (p, i) {
-    return '<label class="checkbox-item" id="chk' + i + '"><input type="checkbox" value="' + feEsc(p) + '"> ' + feEsc(p) + '</label>';
-  }).join('');
+    <!-- 2. Formule -->
+    <div class="section" id="section-identite">
+      <div class="section-header violet"><span class="icon">🎓</span> Formule &amp; démarrage</div>
+      <div class="section-body">
+        <div class="grid-3">
+          <div class="field"><label>Formule</label>
+            <select id="formule"><option value="">— Sélectionner —</option><option>Star</option><option>Essentielle</option></select></div>
+          <div class="field"><label>Modalité de la formule</label>
+            <select id="modaliteFormule"><option value="">— Sélectionner —</option><option>Individuel</option><option>Collectif</option></select></div>
+          <div class="field"><label>Session</label><div class="readonly-chip" id="chipSession">—</div></div>
+        </div>
+        <div class="fe-note">La formule et la modalité sont mémorisées après le premier suivi. La session vient de ClickUp.</div>
+      </div>
+    </div>
 
-  function renderSignatures() {
-    [['att', 'sig-attestation', "Attestation sur l'honneur"], ['prog', 'sig-programme', 'Programme de formation']].forEach(function (d) {
-      var z = $(d[1]);
-      if (S.sigDeja[d[0]]) z.innerHTML = '<div class="signature-item done"><span class="icon">✅</span><span class="txt">' + d[2] + ' — déjà signée</span></div>';
-      else z.innerHTML = '<label class="signature-item' + (S.sigCoche[d[0]] ? ' checked' : '') + '"><input type="checkbox" ' + (S.sigCoche[d[0]] ? 'checked' : '') + ' data-sig="' + d[0] + '"><span class="txt">' + d[2] + " signée aujourd'hui</span></label>";
-    });
-    document.querySelectorAll('[data-sig]').forEach(function (cb) {
-      cb.addEventListener('change', function () { S.sigCoche[cb.dataset.sig] = cb.checked; cb.closest('.signature-item').classList.toggle('checked', cb.checked); });
-    });
-  }
-  renderSignatures();
+    <!-- 3. Historique -->
+    <div class="section" id="section-historique">
+      <div class="section-header bleu"><span class="icon">📈</span> Historique de l'apprenante</div>
+      <div class="section-body">
+        <div id="hist-empty" class="hist-empty">Charge d'abord une fiche pour afficher l'historique.</div>
+        <div id="hist-summary"></div>
+        <button type="button" class="btn-toggle-full hidden" id="btnHist">Dérouler tout l'historique ▾</button>
+        <div id="historique-full"></div>
+      </div>
+    </div>
 
-  /* ---------- Interactions ---------- */
-  document.querySelectorAll('[data-duree]').forEach(function (b) { b.addEventListener('click', function () { setDuree(b.dataset.duree); }); });
-  document.querySelectorAll('[data-modalite]').forEach(function (b) { b.addEventListener('click', function () { setModalite(b.dataset.modalite); }); });
-  function setDuree(v) { S.duree = v; document.querySelectorAll('[data-duree]').forEach(function (b) { b.classList.toggle('active', b.dataset.duree === v); }); }
-  function setModalite(v) { S.modalite = v; document.querySelectorAll('[data-modalite]').forEach(function (b) { b.classList.toggle('active', b.dataset.modalite === v); }); }
-  setDuree('30 min');
+    <!-- 4. Ce suivi -->
+    <div class="section" id="section-suivi">
+      <div class="section-header"><span class="icon">📅</span> Ce suivi</div>
+      <div class="section-body">
+        <div class="grid-3" style="margin-bottom:12px">
+          <div class="field"><label>Date du suivi</label><input type="date" id="dateSuivi"></div>
+          <div class="field"><label>Formatrice *</label>
+            <select id="formatrice"><option value="">— Sélectionner —</option><option>Sabrina Merad</option><option>Leslie Partouche</option></select></div>
+          <div class="field"><label>Durée</label>
+            <div class="toggle-row"><div class="toggle-btn" data-duree="30 min">30 min</div><div class="toggle-btn" data-duree="1h">1h</div></div></div>
+        </div>
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="field"><label>N° de rendez-vous *</label>
+            <select id="numRdv">
+              <option value="">— Sélectionner —</option>
+              <option>1 - Accès (onboarding)</option>
+              <option>2 - Suivi</option>
+              <option>3 - Suivi mi-parcours</option>
+              <option>4 - Bilan</option>
+              <option>Suivi supplémentaire</option>
+            </select></div>
+          <div class="field"><label>Mode du rendez-vous</label>
+            <div class="toggle-row"><div class="toggle-btn" data-modalite="Téléphone">📞 Téléphone</div><div class="toggle-btn" data-modalite="Visio">💻 Visio</div></div></div>
+        </div>
+        <label class="signature-item" style="margin-top:6px;"><input type="checkbox" id="nonRealise"><span class="txt">Le rendez-vous n'a pas eu lieu</span></label>
+      </div>
+    </div>
 
-  document.querySelectorAll('input[type=radio]').forEach(function (r) {
-    r.addEventListener('change', function () {
-      document.querySelectorAll('input[name="' + r.name + '"]').forEach(function (x) { x.closest('.radio-pill, .drapeau-option') && x.closest('.radio-pill, .drapeau-option').classList.toggle(x.closest('.drapeau-option') ? 'selected' : 'on', x.checked); });
-      if (r.name === 'motif') { show('motifDateWrap', r.value === 'Reporté à sa demande'); show('motifAutreWrap', r.value === 'Autre'); }
-      if (r.name === 'prochain') show('prochainDateWrap', r.value === 'date');
-      if (r.name === 'risque') show('risqueActionWrap', r.value === 'Oui');
-    });
-  });
-  document.querySelectorAll('#pointsGrid input').forEach(function (cb) { cb.addEventListener('change', function () { cb.closest('.checkbox-item').classList.toggle('checked', cb.checked); }); });
-  $('nonRealise').addEventListener('change', function () {
-    var nr = $('nonRealise').checked;
-    $('nonRealise').closest('.signature-item').classList.toggle('checked', nr);
-    show('section-motif', nr); show('blocRealise', !nr); show('section-devoirs', !nr && isRdv2Plus());
-  });
-  $('numRdv').addEventListener('change', function () { show('section-devoirs', !$('nonRealise').checked && isRdv2Plus()); });
+    <!-- 5. Motif -->
+    <div class="section hidden" id="section-motif">
+      <div class="section-header" style="background:#B33A3A;"><span class="icon">📵</span> Motif du rendez-vous non réalisé</div>
+      <div class="section-body">
+        <div class="radio-row" id="motifRow">
+          <label class="radio-pill"><input type="radio" name="motif" value="Ne répond pas"> Ne répond pas</label>
+          <label class="radio-pill"><input type="radio" name="motif" value="Reporté à sa demande"> Reporté à sa demande</label>
+          <label class="radio-pill"><input type="radio" name="motif" value="Annulé par l'apprenante"> Annulé par l'apprenante</label>
+          <label class="radio-pill"><input type="radio" name="motif" value="Autre"> Autre</label>
+        </div>
+        <div class="field hidden" id="motifDateWrap" style="margin-top:12px;"><label>Nouvelle date prévue</label><input type="date" id="motifDate"></div>
+        <div class="field hidden" id="motifAutreWrap" style="margin-top:12px;"><label>Préciser</label><input type="text" id="motifAutre" placeholder="Préciser…"></div>
+      </div>
+    </div>
 
-  /* ---------- Historique ---------- */
-  function badge(d) { return d ? '<span class="hist-drapeau-badge drapeau-' + d.toLowerCase() + '">' + FE_FLAG + d + '</span>' : ''; }
-  function renderHistory(h) {
-    $('historique-full').innerHTML = ''; $('historique-full').classList.remove('visible');
-    if (!h || !h.length) { $('hist-empty').textContent = "Aucun suivi précédent enregistré ici (les anciens suivis sont dans l'ancien outil)."; show('hist-empty', true); $('hist-summary').innerHTML = ''; show('btnHist', false); return; }
-    show('hist-empty', false);
-    var l = h[0];
-    $('hist-summary').innerHTML = '<div class="hist-summary"><div class="hist-top">' + badge(l.drapeau) + '<span class="hist-pct">' + (l.pct !== null && l.pct !== undefined && l.pct !== '' ? l.pct + ' %' : '') + '</span><span class="hist-date">Dernier suivi : ' + feFr(l.dateSuivi) + ' · ' + feEsc(l.numRdv) + (l.formatrice ? ' · ' + feEsc(l.formatrice) : '') + '</span></div>' +
-      (l.difficultes ? '<div class="hist-line"><b>Difficultés :</b> ' + feEsc(l.difficultes) + '</div>' : '') +
-      (l.objectifs ? '<div class="hist-line"><b>Objectifs fixés :</b> ' + feEsc(l.objectifs) + '</div>' : '') +
-      (l.devoirs ? '<div class="hist-line"><b>Devoir :</b> ' + feEsc(l.devoirs) + '</div>' : '') + '</div>';
-    $('historique-full').innerHTML = h.map(function (r) {
-      return '<div class="hist-card"><div class="hist-card-head">' + badge(r.drapeau) + '<span>' + feFr(r.dateSuivi) + ' · ' + feEsc(r.numRdv) + '</span>' + (r.pct !== null && r.pct !== undefined && r.pct !== '' ? '<span class="pct">' + r.pct + ' %</span>' : '') + '</div>' +
-        (r.rdvRealise === 'Non' ? '<div class="hist-line"><b>RDV non réalisé :</b> ' + feEsc(r.motif) + '</div>' : '') +
-        (r.pointsCoches ? '<div class="hist-line"><b>Points :</b> ' + feEsc(r.pointsCoches) + '</div>' : '') +
-        (r.difficultes ? '<div class="hist-line"><b>Difficultés :</b> ' + feEsc(r.difficultes) + '</div>' : '') +
-        (r.objectifs ? '<div class="hist-line"><b>Objectifs :</b> ' + feEsc(r.objectifs) + '</div>' : '') + '</div>';
-    }).join('');
-    show('btnHist', h.length > 1);
-  }
-  $('btnHist').addEventListener('click', function () { var f = $('historique-full'); var v = f.classList.toggle('visible'); $('btnHist').textContent = v ? "Replier l'historique ▴" : "Dérouler tout l'historique ▾"; });
+    <!-- 6. Devoirs -->
+    <div class="section hidden" id="section-devoirs">
+      <div class="section-header" style="background:#C07A3E;"><span class="icon">📓</span> Devoir de la semaine</div>
+      <div class="section-body">
+        <div class="fe-note" style="margin:0 0 10px;">À partir du 2ème rendez-vous : le devoir demandé au suivi précédent a-t-il été fait ?</div>
+        <div class="radio-row" id="devoirsRow">
+          <label class="radio-pill"><input type="radio" name="devoirs" value="Fait"> ✅ Fait</label>
+          <label class="radio-pill"><input type="radio" name="devoirs" value="Non fait"> ⚠️ Non fait (alerte pour Ninie)</label>
+        </div>
+      </div>
+    </div>
 
-  /* ---------- Chargement du contexte ---------- */
-  async function loadContext(params) {
-    status('⏳ Chargement de la fiche…', '');
-    setSections(false);
-    try {
-      var c = await feGet(Object.assign({ action: 'contexte' }, params));
-      if (!c || !c.ok) { status('⚠️ ' + ((c && c.error) || 'Fiche introuvable'), 'err'); return; }
-      S.ctx = c; S.taskId = c.taskId; if (c.contactId) S.contactId = c.contactId;
-      $('apprenante').value = c.nom; $('apprenante').readOnly = !!(feParam('contactId') || feParam('taskId'));
-      $('chipSession').textContent = (c.debut ? feFr(c.debut) : '—') + ' → ' + (c.fin ? feFr(c.fin) : '—');
-      if (c.formule) $('formule').value = c.formule;
-      if (c.modaliteFormule) $('modaliteFormule').value = c.modaliteFormule;
-      if (!$('numRdv').value) $('numRdv').value = c.numSuggere || '';
-      if (c.pct !== null && c.pct !== undefined) { $('pct').value = c.pct; $('pctNote').textContent = '✅ ' + c.pct + ' % repris de ClickUp (Teachizy). Modifiable si besoin.'; }
-      else $('pctNote').textContent = 'Pas de % disponible sur ClickUp : renseigne-le à la main.';
-      var last = (c.historique || [])[0];
-      if (!$('formatrice').value && last && last.formatrice) $('formatrice').value = last.formatrice;
-      if (!$('dateCertification').value) {
-        var lastCert = (c.historique || []).find(function (r) { return r.dateCertification; });
-        if (lastCert) $('dateCertification').value = lastCert.dateCertification;
-      }
-      S.sigDeja.att = !!c.signeAttestation; S.sigDeja.prog = !!c.signeProgramme; renderSignatures();
-      renderHistory(c.historique);
-      show('btnReset', true);
-      status('✅ ' + c.nom + ' — fiche chargée' + (c.statut ? ' (' + c.statut + ')' : ''), 'ok');
-      if (!S.contactId) status('⚠️ Contact GHL introuvable pour cette apprenante : ouvre la fiche depuis le lien Slack pour pouvoir enregistrer.', 'err');
-      S.loaded = true; setSections(true);
-      show('section-devoirs', !$('nonRealise').checked && isRdv2Plus());
-    } catch (e) { status('⚠️ Impossible de charger la fiche : ' + e.message, 'err'); }
-  }
+    <div id="blocRealise">
+      <!-- 7. Émargement et documents -->
+      <div class="section" id="section-emargement">
+        <div class="section-header" style="background:var(--pink-dark);"><span class="icon">🖊️</span> Émargement &amp; documents signés</div>
+        <div class="section-body">
+          <div class="signature-grid">
+            <div id="sig-attestation"></div>
+            <div id="sig-programme"></div>
+          </div>
+          <div class="fe-note">Profites-en pour faire signer les documents manquants pendant le rendez-vous.</div>
+        </div>
+      </div>
 
-  /* ---------- Recherche manuelle ---------- */
-  var NOMS = [];
-  async function loadNames() {
-    try {
-      var r = await feGet({ action: 'noms' });
-      if (!r || !r.ok) return;
-      NOMS = r.data;
-      $('liste-apprenantes').innerHTML = NOMS.map(function (n) { return '<option value="' + feEsc(n.nom) + '"></option>'; }).join('');
-    } catch (e) {}
-  }
-  $('btnCharger').addEventListener('click', function () {
-    var v = $('apprenante').value.trim().toLowerCase();
-    var hit = NOMS.find(function (n) { return n.nom.toLowerCase() === v; });
-    if (!hit) { status('Nom non reconnu : choisis une apprenante dans la liste proposée.', 'err'); return; }
-    loadContext({ taskId: hit.taskId });
-  });
+      <!-- 8. Niveau -->
+      <div class="section" id="section-pct">
+        <div class="section-header violet"><span class="icon">📊</span> Niveau de suivi du parcours</div>
+        <div class="section-body">
+          <div class="grid-2">
+            <div class="field"><label>% du parcours validé sur Teachizy</label><input type="number" id="pct" min="0" max="100" placeholder="Ex : 45"></div>
+            <div class="field"><label>Date de certification envisagée</label><input type="date" id="dateCertification"></div>
+          </div>
+          <div class="fe-note" id="pctNote">Le % est repris automatiquement de ClickUp (synchronisé avec Teachizy). Modifiable si besoin.</div>
+          <div class="fe-note">Les sessions de certification ont lieu environ tous les 15 jours (mi-mois et fin de mois).</div>
+        </div>
+      </div>
 
-  /* ---------- Envoi ---------- */
-  function collect() {
-    var nr = $('nonRealise').checked;
-    var pts = Array.prototype.slice.call(document.querySelectorAll('#pointsGrid input:checked')).map(function (x) { return x.value; }).join(', ');
-    var motif = radioVal('motif');
-    var detail = motif === 'Reporté à sa demande' ? $('motifDate').value : (motif === 'Autre' ? $('motifAutre').value.trim() : '');
-    return {
-      v: 2, k: feKey(false), contactId: S.contactId, apprenante: $('apprenante').value.trim(), rdvDate: rdvDateParam,
-      dateSuivi: $('dateSuivi').value, formatrice: $('formatrice').value, numRdv: $('numRdv').value,
-      rdvRealise: nr ? 'Non' : 'Oui', motif: nr ? motif : '', detailMotif: nr ? detail : '',
-      duree: S.duree, modalite: S.modalite,
-      drapeau: radioVal('drapeau'),
-      devoirs: radioVal('devoirs'),
-      pctProgression: $('pct').value, dateCertification: $('dateCertification').value,
-      formule: $('formule').value, modaliteFormule: $('modaliteFormule').value,
-      signatureAttestation: (S.sigDeja.att || S.sigCoche.att) ? 'Oui' : '', signatureProgramme: (S.sigDeja.prog || S.sigCoche.prog) ? 'Oui' : '',
-      pointsCoches: pts, pointsAutre: $('pointsAutre').value, pointsForts: $('pointsForts').value, difficultes: $('difficultes').value,
-      objectifs: $('objectifs').value, correctionDevoirs: $('correctionDevoirs').value, adaptation: $('adaptation').value, assistance: $('assistance').value, autre: $('autre').value,
-      risque: radioVal('risque'), actionRisque: $('actionRisque').value,
-      prochainType: radioVal('prochain'), prochainDate: $('prochainDate').value, prochainHeure: $('prochainHeure').value.trim()
-    };
-  }
-  function validate(p) {
-    if (!S.loaded) return ['section-apprenante', "Charge d'abord la fiche de l'apprenante."];
-    if (!p.contactId) return ['section-apprenante', "Contact GHL introuvable : ouvre la fiche depuis le lien Slack."];
-    if (!p.dateSuivi) return ['section-suivi', 'Merci de renseigner la date du suivi.'];
-    if (!p.formatrice) return ['section-suivi', 'Merci de choisir la formatrice.'];
-    if (!p.numRdv) return ['section-suivi', 'Merci de choisir le n° de rendez-vous.'];
-    if (p.rdvRealise === 'Non') {
-      if (!p.motif) return ['section-motif', 'Merci de préciser le motif du rendez-vous non réalisé.'];
-      if (p.motif === 'Reporté à sa demande' && !p.detailMotif) return ['section-motif', "Merci d'indiquer la nouvelle date prévue."];
-      if (p.motif === 'Autre' && !p.detailMotif) return ['section-motif', 'Merci de préciser le motif.'];
-    } else {
-      if (!p.drapeau) return ['section-drapeau', 'Merci de sélectionner un drapeau de suivi (gris, bleu, jaune ou rouge).'];
-      if (isRdv2Plus() && !p.devoirs) return ['section-devoirs', "Merci d'indiquer si le devoir de la semaine a été fait ou non."];
-      if (p.risque === 'Oui' && !p.actionRisque.trim()) return ['section-risque', "Merci de préciser l'action prévue (risque d'abandon)."];
-    }
-    if (p.prochainType === 'date' && !p.prochainDate) return ['section-prochain', 'Merci de renseigner la date du prochain rendez-vous.'];
-    return null;
-  }
-  $('btnSave').addEventListener('click', async function () {
-    if (S.sent) return;
-    var p = collect(), err = validate(p);
-    if (err) { msg(err[1], false); alertSection(err[0]); return; }
-    var btn = $('btnSave'); btn.disabled = true; btn.textContent = 'Enregistrement…'; msg('Envoi en cours…', true);
-    var body = new URLSearchParams();
-    Object.keys(p).forEach(function (k) { body.append(k, p[k] === undefined || p[k] === null ? '' : p[k]); });
-    try {
-      var r = await fetch(FE.API + FE.POST, { method: 'POST', body: body });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      S.sent = true; btn.textContent = 'Fiche enregistrée ✓';
-      msg("✅ Fiche enregistrée. Le PDF, la carte ClickUp et le message Slack arrivent dans quelques secondes. Tu peux fermer cette page.", true);
-    } catch (e) {
-      if (e instanceof TypeError) {
-        S.sent = true; btn.textContent = 'Envoyé';
-        msg("Envoi effectué, mais la confirmation n'a pas pu être lue. Vérifie dans Slack (message « Fiche de suivi enregistrée ») avant de renvoyer.", true);
-      } else { btn.disabled = false; btn.textContent = 'Enregistrer le suivi'; msg("L'enregistrement a échoué (" + e.message + "). Réessaie ou préviens Ninie.", false); }
-    }
-  });
+      <!-- 9. Drapeau -->
+      <div class="section" id="section-drapeau">
+        <div class="section-header gris"><span class="icon">🚩</span> Drapeau de suivi *</div>
+        <div class="section-body">
+          <div class="fe-note" style="margin:0 0 10px;">À toi de choisir, selon ce que tu connais de l'apprenante, pas seulement le %.</div>
+          <div class="drapeau-grid" id="drapeauGrid"></div>
+          <div class="fe-note">Paliers attendus sur Teachizy : semaine 1 → 25 % · semaine 2 → 50 % · semaine 3 → 80 % · semaine 4 → ~100 %.</div>
+        </div>
+      </div>
 
-  /* ---------- Démarrage ---------- */
-  var d = rdvDateParam ? rdvDateParam.slice(0, 10) : new Date().toISOString().slice(0, 10);
-  $('dateSuivi').value = d;
-  var fp = feParam('formatrice').trim().toLowerCase(); if (fp) { var opt = Array.prototype.find.call($('formatrice').options, function (o) { var v = o.value.toLowerCase(); return v && (v === fp || v.indexOf(fp + ' ') === 0 || fp.indexOf(v + ' ') === 0); }); if (opt) $('formatrice').value = opt.value; }
-  var nom = feParam('apprenante'); if (nom) $('apprenante').value = nom;
-  var rk = document.createElement('button'); rk.id = 'btnReset'; rk.type = 'button'; rk.className = 'btn-link-reset hidden'; rk.textContent = "↺ Changer d'apprenante";
-  rk.addEventListener('click', function () { location.href = 'fiche.html'; });
-  $('aide').parentNode.appendChild(rk);
-  feKey(false);
-  setSections(false);
-  var tid = feParam('taskId');
-  if (S.contactId) { $('btnCharger').classList.add('hidden'); loadContext({ contactId: S.contactId }); }
-  else if (tid) { $('btnCharger').classList.add('hidden'); $('apprenante').readOnly = true; loadContext({ taskId: tid }); }
-  else { loadNames(); status('Aucune apprenante sélectionnée.', ''); }
-})();
+      <!-- 10. Points -->
+      <div class="section" id="section-points">
+        <div class="section-header vert"><span class="icon">✅</span> Points abordés pendant le suivi</div>
+        <div class="section-body">
+          <div class="checkbox-grid" id="pointsGrid"></div>
+          <div class="field"><label>Précision / autre point abordé</label><textarea id="pointsAutre" placeholder="Un sujet abordé qui n'est pas dans la liste ci-dessus…"></textarea></div>
+        </div>
+      </div>
+
+      <!-- 11. Bilan -->
+      <div class="section" id="section-bilan">
+        <div class="section-header"><span class="icon">📝</span> Bilan du suivi</div>
+        <div class="section-body">
+          <div class="grid-2" style="margin-bottom:12px">
+            <div class="field"><label>Points forts</label><textarea id="pointsForts" placeholder="Ce qui avance bien, les progrès…"></textarea></div>
+            <div class="field"><label>Difficultés rencontrées</label><textarea id="difficultes" placeholder="Ce qui pose problème en ce moment…"></textarea></div>
+          </div>
+          <div class="grid-2" style="margin-bottom:12px">
+            <div class="field"><label>Objectifs pour la prochaine étape</label><textarea id="objectifs" placeholder="Ce qui est à faire d'ici le prochain RDV…"></textarea></div>
+            <div class="field"><label>Correction de devoirs</label><textarea id="correctionDevoirs" placeholder="Devoirs corrigés, retours donnés…"></textarea></div>
+          </div>
+          <div class="grid-2" style="margin-bottom:12px">
+            <div class="field"><label>Besoin d'adaptation ou d'aménagement (handicap…)</label><textarea id="adaptation"></textarea></div>
+            <div class="field"><label>Assistance technique apportée (plateforme)</label><textarea id="assistance"></textarea></div>
+          </div>
+          <div class="field"><label>Autre</label><textarea id="autre" placeholder="Tout autre point à noter…"></textarea></div>
+        </div>
+      </div>
+
+      <!-- 12. Risque -->
+      <div class="section" id="section-risque">
+        <div class="section-header" style="background:#B33A3A;"><span class="icon">⚠️</span> Risque d'abandon</div>
+        <div class="section-body">
+          <div class="radio-row" id="risqueRow">
+            <label class="radio-pill on"><input type="radio" name="risque" value="Non" checked> Non</label>
+            <label class="radio-pill"><input type="radio" name="risque" value="Oui"> Oui (alerte pour Ninie)</label>
+          </div>
+          <div class="field hidden" id="risqueActionWrap" style="margin-top:12px;"><label>Action prévue</label><textarea id="actionRisque" placeholder="Que prévoit-on pour la garder dans le parcours ?"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 13. Prochain RDV -->
+    <div class="section" id="section-prochain">
+      <div class="section-header violet"><span class="icon">🗓️</span> Prochain rendez-vous pédagogique</div>
+      <div class="section-body">
+        <div class="radio-row" id="prochainRow">
+          <label class="radio-pill on"><input type="radio" name="prochain" value="ghl" checked> Déjà fixé dans GHL</label>
+          <label class="radio-pill"><input type="radio" name="prochain" value="date"> Fixer la date ici</label>
+          <label class="radio-pill"><input type="radio" name="prochain" value="fin"> Fin de formation</label>
+        </div>
+        <div class="grid-2 hidden" id="prochainDateWrap" style="margin-top:12px;">
+          <div class="field"><label>Date</label><input type="date" id="prochainDate"></div>
+          <div class="field"><label>Heure (ex : 14h30)</label><input type="text" id="prochainHeure" placeholder="14h30"></div>
+        </div>
+        <div class="fe-note">« Déjà fixé dans GHL » : la date est reprise automatiquement du calendrier. Si aucun RDV n'est fixé, une alerte est postée sur Slack.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="msg"></div>
+  <div class="export-bar">
+    <a class="link-consult" href="recap.html">📊 Voir le récapitulatif des suivis</a>
+    <div class="btn-group">
+      <button class="btn-secondary" onclick="window.print()">🖨️ Imprimer / PDF</button>
+      <button class="btn-primary" id="btnSave">Enregistrer le suivi</button>
+    </div>
+  </div>
+</div>
+<script src="assets/app.js"></script>
+<script src="assets/fiche.js"></script>
+</body>
+</html>
