@@ -153,7 +153,6 @@
       dateSuivi: $('dateSuivi').value, formatrice: $('formatrice').value, numRdv: $('numRdv').value,
       rdvRealise: nr ? 'Non' : 'Oui', motif: nr ? motif : '', detailMotif: nr ? detail : '',
       duree: S.duree, modalite: S.modalite,
-      emargement: radioVal('emarg'),
       drapeau: radioVal('drapeau'),
       devoirs: radioVal('devoirs'),
       pctProgression: $('pct').value, dateCertification: $('dateCertification').value,
@@ -176,7 +175,6 @@
       if (p.motif === 'Reporté à sa demande' && !p.detailMotif) return ['section-motif', "Merci d'indiquer la nouvelle date prévue."];
       if (p.motif === 'Autre' && !p.detailMotif) return ['section-motif', 'Merci de préciser le motif.'];
     } else {
-      if (!p.emargement) return ['section-emargement', "Merci d'indiquer si la feuille d'émargement est signée."];
       if (!p.drapeau) return ['section-drapeau', 'Merci de sélectionner un drapeau de suivi (gris, bleu, jaune ou rouge).'];
       if (isRdv2Plus() && !p.devoirs) return ['section-devoirs', "Merci d'indiquer si le devoir de la semaine a été fait ou non."];
       if (p.risque === 'Oui' && !p.actionRisque.trim()) return ['section-risque', "Merci de préciser l'action prévue (risque d'abandon)."];
